@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EcoCity</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  min-height:100vh;
+  font-family:system-ui,sans-serif;
+  background:#020617;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  color:white;
+}
+
+/* ===== APP ===== */
+.app{
+  width:460px;
+  padding:22px;
+  border-radius:24px;
+  background:rgba(255,255,255,.1);
+  backdrop-filter:blur(18px);
+  box-shadow:0 30px 80px rgba(0,0,0,.6);
+}
+
+/* ===== TITRE ===== */
+h1{text-align:center}
+.subtitle{text-align:center;opacity:.75;margin-bottom:16px}
+
+/* ===== CARTE ===== */
+.map{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:8px;
+  margin-bottom:16px;
+}
+
+.tile{
+  height:60px;
+  border-radius:12px;
+  background:#0f172a;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:22px;
+  cursor:pointer;
+  transition:.15s;
+  border:2px solid transparent;
+}
+
+.tile:hover{
+  transform:scale(1.05);
+  border-color:#38bdf8;
+}
+
+.tile.forest{background:#14532d}
+.tile.factory{background:#3f3f46}
+.tile.empty{background:#1e293b}
+
+/* ===== CONTROLS ===== */
+.controls{
+  background:rgba(0,0,0,.35);
+  padding:14px;
+  border-radius:18px;
+  margin-bottom:14px;
+}
+
+select,button{
+  width:100%;
+  padding:12px;
+  border-radius:14px;
+  border:none;
+  margin-top:8px;
+  font-weight:bold;
+}
+
+button{
+  background:linear-gradient(135deg,#38bdf8,#818cf8);
+  cursor:pointer;
+}
+
+/* ===== STATS ===== */
+.stats{
+  background:rgba(0,0,0,.35);
+  padding:14px;
+  border-radius:18px;
+  font-size:.9em;
+}
+
+.stat{margin-bottom:8px}
+.bar{
+  height:12px;
+  background:rgba(255,255,255,.2);
+  border-radius:10px;
+  overflow:hidden;
+}
+
+.fill{
+  height:100%;
+  width:50%;
+}
+
+.env{background:#22c55e}
+.energy{background:#38bdf8}
+.pollution{background:#ef4444}
+
+.message{
+  margin-top:12px;
+  padding:10px;
+  border-radius:14px;
+  background:rgba(0,0,0,.4);
+  text-align:center;
+  font-size:.9em;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+<h1>🏙️ EcoCity</h1>
+<p class="subtitle">Construis sans détruire</p>
+
+<!-- CARTE -->
+<div class="map" id="map"></div>
+
+<!-- CONTROLES -->
+<div class="controls">
+  <strong>Construction</strong>
+  <select id="buildType">
+    <option value="forest">🌲 Forêt</option>
+    <option value="factory">🏭 Usine</option>
+  </select>
+  <button onclick="build()">Construire sur la zone sélectionnée</button>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat">🌱 Environnement
+    <div class="bar"><div class="fill env" id="env"></div></div>
+  </div>
+  <div class="stat">⚡ Énergie
+    <div class="bar"><div class="fill energy" id="energy"></div></div>
+  </div>
+  <div class="stat">🌫️ Pollution
+    <div class="bar"><div class="fill pollution" id="pollution"></div></div>
+  </div>
+</div>
+
+<div class="message" id="message">
+  Sélectionne une zone puis choisis quoi construire.
+</div>
+
+</div>
+
+<script>
+const map=document.getElementById("map");
+let selected=null;
+
+let env=70, energy=40, pollution=20;
+
+// Création carte
+let tiles=[];
+for(let i=0;i<15;i++){
+  tiles.push({type:"empty"});
+}
+
+function render(){
+  map.innerHTML="";
+  tiles.forEach((t,i)=>{
+    let d=document.createElement("div");
+    d.className="tile "+t.type;
+    d.textContent=
+      t.type==="forest"?"🌲":
+      t.type==="factory"?"🏭":"";
+    d.onclick=()=>select(i,d);
+    map.appendChild(d);
+  });
+  updateStats();
+}
+
+function select(i,el){
+  document.querySelectorAll(".tile").forEach(t=>t.style.outline="none");
+  el.style.outline="3px solid #38bdf8";
+  selected=i;
+}
+
+function build(){
+  if(selected===null){msg("❌ Aucune zone sélectionnée");return;}
+  if(tiles[selected].type!=="empty"){msg("❌ Zone déjà construite");return;}
+
+  let type=document.getElementById("buildType").value;
+  tiles[selected].type=type;
+
+  if(type==="forest"){
+    env+=10; pollution-=5;
+    msg("🌲 Forêt plantée. Environnement amélioré.");
+  }
+  if(type==="factory"){
+    energy+=12; pollution+=15; env-=8;
+    msg("🏭 Usine construite. Production accrue.");
+  }
+
+  clamp();
+  render();
+}
+
+function updateStats(){
+  env=Math.max(0,Math.min(100,env));
+  energy=Math.max(0,Math.min(100,energy));
+  pollution=Math.max(0,Math.min(100,pollution));
+
+  document.getElementById("env").style.width=env+"%";
+  document.getElementById("energy").style.width=energy+"%";
+  document.getElementById("pollution").style.width=pollution+"%";
+}
+
+function clamp(){}
+
+function msg(t){
+  document.getElementById("message").textContent=t;
+}
+
+render();
+</script>
+
+</body>
+</html>
