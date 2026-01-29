@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Retro Bounce FIX</title>
+<title>Retro Dodge</title>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{
   background:#111;
+  height:100vh;
   display:flex;
   justify-content:center;
   align-items:center;
-  height:100vh;
   font-family:monospace;
 }
 
@@ -109,50 +109,67 @@ let px=160, py=0, vy=0;
 let balls=[];
 let running=true;
 
-const GRAVITY = -0.7;
 const FLOOR = 10;
+const JUMP_FORCE = 12;
+const GRAVITY = -0.8;
 
 function spawnBall(){
   const b=document.createElement("div");
   b.className="ball";
   b.x=Math.random()*300;
-  b.y=220;
-  b.vx=Math.random()<0.5?-2.2:2.2;
-  b.vy=0;
+  b.y=Math.random()*160+40;
+  b.vx=Math.random()<0.5?-2.5:2.5;
+  b.vy=Math.random()<0.5?-2:2;
+  b.passed=false;
   screen.appendChild(b);
   balls.push(b);
 }
 
-setInterval(()=>{ if(running) spawnBall(); },1800);
+setInterval(()=>{ if(running) spawnBall(); },1600);
 
 function loop(){
   if(running){
+
     // joueur
     vy+=GRAVITY;
     py+=vy;
-    if(py<=0){py=0;vy=0;}
+    if(py<=0){
+      if(py<0){
+        // atterrissage → supprimer boules passées
+        balls = balls.filter(b=>{
+          if(b.passed){
+            b.remove();
+            return false;
+          }
+          return true;
+        });
+      }
+      py=0;
+      vy=0;
+    }
     player.style.bottom=(FLOOR+py)+"px";
 
     balls.forEach(b=>{
-      // physique boule
-      b.vy+=GRAVITY;
-      b.y+=b.vy;
+      // mouvement sans gravité
       b.x+=b.vx;
+      b.y+=b.vy;
 
-      if(b.y<=0){
-        b.y=0;
-        b.vy=8;
+      // rebonds murs
+      if(b.x<=0 || b.x>=314) b.vx*=-1;
+      if(b.y<=0 || b.y>=200) b.vy*=-1;
+
+      b.style.left=b.x+"px";
+      b.style.bottom=(FLOOR+b.y)+"px";
+
+      // détection saut réussi
+      if(py>20 && Math.abs(px-b.x)<15 && py>b.y+20){
+        b.passed=true;
       }
 
-      if(b.x<=0 || b.x>=314) b.vx*=-1;
-
-      b.style.bottom=(FLOOR+b.y)+"px";
-      b.style.left=b.x+"px";
-
-      // collision réelle
+      // collision mortelle
       const dx=Math.abs(b.x-px);
       const dy=Math.abs(b.y-py);
-      if(dx<20 && dy<20){
+      if(dx<18 && dy<18){
         end();
       }
     });
@@ -176,7 +193,7 @@ function restart(){
 
 function left(){ px=Math.max(0,px-12); player.style.left=px+"px"; }
 function right(){ px=Math.min(314,px+12); player.style.left=px+"px"; }
-function jump(){ vy=12; }
+function jump(){ vy=JUMP_FORCE; }
 
 document.getElementById("left").ontouchstart=left;
 document.getElementById("right").ontouchstart=right;
@@ -193,6 +210,8 @@ loop();
 
 </body>
 </html>
+
+
 
 
 
